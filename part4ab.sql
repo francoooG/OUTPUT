@@ -24,15 +24,17 @@ CREATE TRIGGER `orders_BEFORE_INSERT` BEFORE INSERT ON `orders` FOR EACH ROW BEG
     
     -- Status must be in Process
     SET NEW.status := 'In Process'; 
+
+    SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
 
 
 -- BEFORE UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orders_BEFORE_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orders_BEFORE_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesv2.5g211`$$
 CREATE TRIGGER `orders_BEFORE_UPDATE` BEFORE UPDATE ON `orders` FOR EACH ROW BEGIN
 	DECLARE concat_string TEXT;
 
@@ -95,8 +97,34 @@ CREATE TRIGGER `orders_BEFORE_UPDATE` BEFORE UPDATE ON `orders` FOR EACH ROW BEG
             SET MESSAGE_TEXT = 'ERROR 1003: Comment is null. A comment is required when cancelling an order.';
         END IF;
     END IF; 
+
+    SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
+
+-- AFTER UPDATE
+DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orders_AFTER_UPDATE`;
+
+DELIMITER $$
+USE `dbsalesv2.5g211`$$
+CREATE TRIGGER `orders_AFTER_UPDATE` AFTER UPDATE ON `orders` FOR EACH ROW BEGIN
+	IF (old.orderNumber <> new.orderNumber) THEN 
+		SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "orderNumber cannot be modified";
+	END IF;
+    
+  IF NEW.status = 'Cancelled' THEN
+  DELETE FROM orderdetails 
+  WHERE orderNumber = OLD.orderNumber;
+  END IF;
+    
+	INSERT INTO orders_audit VALUES (old.orderNumber, now(), 'U', old.orderDate, old.requiredDate, old.shippedDate, 
+																					  old.status, old.comments, old.customerNumber,
+																					  new.orderDate, new.requiredDate, new.shippedDate, 
+																					  new.status, new.comments, new.customerNumber,
+                                                                                      new.end_username, new.end_userreason); 
+END$$
+DELIMITER ;
+
 
 -- BEFORE DELETE
 DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orders_BEFORE_DELETE`;
@@ -159,7 +187,9 @@ CREATE TRIGGER `orderdetails_BEFORE_INSERT` BEFORE INSERT ON `orderdetails` FOR 
     END IF; 
 	-- For Testing if the correct price range is retrieve
 	-- SET message := CONCAT(max_price, min_price);
-	-- SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = message; 
+	-- SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = message;
+
+    SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
 
@@ -220,6 +250,8 @@ CREATE TRIGGER `orderdetails_BEFORE_UPDATE` BEFORE UPDATE ON `orderdetails` FOR 
 															   isDoubleChanged(OLD.priceEach, NEW.priceEach) = TRUE)) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ERROR 100x: QuantityOrdered and PriceEach can only be updated if status is In Process.';
     END IF;
+
+    SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
 
@@ -247,12 +279,12 @@ DELIMITER ;
 
 
 -- BEFORE DELETE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_BEFORE_DELETE`;
+DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orderdetails_BEFORE_DELETE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesv2.5g211`$$
 CREATE TRIGGER `orderdetails_BEFORE_DELETE` BEFORE DELETE ON `orderdetails` FOR EACH ROW BEGIN
-    IF (checkOrderStatus(OLD.orderNumber) <> "In Process") THEN
+    IF (!(checkOrderStatus(OLD.orderNumber) = "In Process" OR checkOrderStatus(OLD.orderNumber) = "Cancelled")) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "ERROR 100x: Shipped Orders can't be deleted.";
     END IF;
 
@@ -260,7 +292,7 @@ CREATE TRIGGER `orderdetails_BEFORE_DELETE` BEFORE DELETE ON `orderdetails` FOR 
     INSERT INTO orderdetails_audit VALUES (OLD.orderNumber, OLD.productCode, NOW(), 'D',
 										   OLD.quantityOrdered, OLD.priceEach, OLD.orderLineNumber, OLD.referenceNo,
 										   NULL, NULL, NULL, NULL,
-                                           OLD.end_username, OLD.end_userreason);  
+                                           OLD.end_username, OLD.end_userreason);
 END$$
 DELIMITER ;
 
@@ -287,6 +319,17 @@ END$$
 DELIMITER ;
 
 -- CURRENT_PRODUCTS
+-- BEFORE INSERT
+DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`current_products_BEFORE_INSERT`;
+
+DELIMITER $$
+USE `dbsalesv2.5g211`$$
+CREATE TRIGGER `dbsalesv2.5g211`.`current_products_BEFORE_INSERT` BEFORE INSERT ON `current_products` FOR EACH ROW
+BEGIN
+    SET NEW.end_username = CURRENT_USER;
+END$$
+DELIMITER ;
+
 -- BEFORE UPDATE
 DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`current_products_BEFORE_UPDATE`;
 
@@ -297,6 +340,8 @@ BEGIN
 	IF (isStringChanged(OLD.product_type, NEW.product_type) = TRUE) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "ERROR 100x: Product categories cannot be modified.";
     END IF;   
+
+    SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
 
@@ -839,4 +884,42 @@ BEGIN
     END IF;
 END$$
 
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE EVENT dbm211_cancelOverdueOrders
+ON SCHEDULE EVERY 1 DAY
+STARTS '2024-07-04 00:00:00'
+DO
+BEGIN
+	DECLARE i 					INT DEFAULT 0;
+	DECLARE n 					INT DEFAULT 0;
+    DECLARE currOrderNumber		INT DEFAULT 0;
+    DECLARE daysElapsed			INT DEFAULT 0;
+    
+    -- Assigns how many orders there are to n
+	SELECT COUNT(orderNumber) INTO n
+    FROM orders
+    WHERE status = "In Process";
+    
+	-- While statement to iterate through each orderNumber and update their status
+	WHILE i < n DO 
+		-- Gets an orderNumber and how many days has elapsed per iteration
+		SELECT 		orderNumber, DATEDIFF(NOW(), orderDate) INTO currOrderNumber, daysElapsed
+        FROM 		orders o
+        WHERE 		o.status = "In Process"
+        ORDER BY 	orderNumber ASC LIMIT 1 OFFSET i; 
+        
+        -- Cancels order
+        IF (daysElapsed > 7) THEN
+			UPDATE 	orders
+            SET 	status = "Cancelled", comments = "System automatically cancelled order. Order wasn't shipped within 7 days."
+            WHERE	orderNumber = currOrderNumber;
+        END IF;
+		
+        -- Iteration increment
+        SET 		i = i + 1;
+	END WHILE;
+END$$
 DELIMITER ;
