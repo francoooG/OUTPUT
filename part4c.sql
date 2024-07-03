@@ -1,15 +1,14 @@
-
--- Change salesRepAssigmnents employeeNumber foreign key from salesRepresentatives to employees
-ALTER TABLE dbsalesv2.5g211.salesrepassignments 
-DROP FOREIGN KEY FK-88_001;
-ALTER TABLE dbsalesv2.5g211.salesrepassignments 
-ADD INDEX FK-88_001_idx (employeeNumber ASC) VISIBLE,
+ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+DROP FOREIGN KEY `FK-88_001`;
+ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+ADD INDEX `FK-88_001_idx` (`employeeNumber` ASC) VISIBLE,
 DROP PRIMARY KEY;
 ;
-ALTER TABLE dbsalesv2.5g211.salesrepassignments 
-ADD CONSTRAINT FK-88_001
-  FOREIGN KEY (employeeNumber)
-  REFERENCES dbsalesv2.5g211.employees (employeeNumber);
+ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+ADD CONSTRAINT `FK-88_001`
+  FOREIGN KEY (`employeeNumber`)
+  REFERENCES `dbsalesv2.5g211`.`employees` (`employeeNumber`);
+
 
 
 -- Change sales_managers employeeNumber foreign key from Non_SalesRepresentatives to employees
@@ -236,8 +235,6 @@ CREATE TRIGGER `employees_AFTER_UPDATE` AFTER UPDATE ON `employees` FOR EACH ROW
 		END IF;
     END IF; 
 
-    SET NEW.end_username = CURRENT_USER;
-
 	INSERT INTO employees_audit VALUES (old.employeeNumber, now(), 'U', old.lastName, old.firstName, old.extension, 
 																		old.email, old.jobTitle, old.employee_type,
 																		new.lastName, new.firstName, new.extension, 
@@ -364,6 +361,7 @@ BEGIN
     DECLARE salesManager        VARCHAR(255) DEFAULT 'System';
 	DECLARE facilitatedSales    DECIMAL(10,2);
     DECLARE newQuota            DECIMAL(10,2);
+    DECLARE previousQuota            DECIMAL(10,2);
     
     -- Assigns n to how many customers there are
 	SELECT COUNT(employeeNumber) INTO n

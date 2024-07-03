@@ -30,7 +30,7 @@
 -- SALES_ORDER_MODULE
 CREATE USER sales_order_module IDENTIFIED BY 'DBADM211';
 
-CREATE VIEW products_sales_order AS
+CREATE VIEW product_sales_order AS
 	SELECT p.productCode, p.productName, ppl.productLine, cp.product_type,
 		CASE 
 			WHEN cp.product_type = 'W' THEN pw.MSRP
@@ -46,10 +46,45 @@ CREATE VIEW customers_sales_order AS
 	SELECT customerNumber, creditLimit
     FROM customers;
     
-GRANT SELECT, INSERT, UPDATE, DELETE 	ON orders 							TO sales_order_module;
-GRANT SELECT, INSERT, UPDATE, DELETE 	ON orderdetails						TO sales_order_module;
-GRANT SELECT, UPDATE				 	ON product_sales_order 				TO sales_order_module;
-GRANT SELECT				 			ON customers_sales_order 			TO sales_order_module;
+CREATE VIEW products_view AS
+	SELECT productCode, productName
+    FROM products;   
+    
+CREATE VIEW product_productlines_view AS
+	SELECT productLine
+    FROM product_productlines;    
+    
+CREATE VIEW productlines_view AS
+	SELECT productLine
+    FROM productlines;    
+    
+CREATE VIEW current_products_view AS
+	SELECT productCode, quantityInStock
+    FROM current_products;
+    
+CREATE VIEW product_wholesale_view AS
+	SELECT productCode, MSRP
+    FROM product_wholesale;
+    
+CREATE VIEW current_products_view AS
+	SELECT productCode, quantityInStock
+    FROM current_products;
+    
+CREATE VIEW product_pricing_view AS
+	SELECT productCode, MSRP
+    FROM product_pricing;
+    
+GRANT SELECT, INSERT, UPDATE, DELETE 	ON orders 							    TO sales_order_module;
+GRANT SELECT, INSERT, UPDATE, DELETE 	ON orderdetails						    TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON product_sales_order 					TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON products_view 						TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON product_productlines_view 			TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON productlines_view 					TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON current_products_view 				TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON product_wholesale_view 				TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON current_products_view 				TO sales_order_module;
+GRANT SELECT, UPDATE 	                ON product_pricing_view 				TO sales_order_module;
+GRANT SELECT				 	        ON customers_sales_order 			    TO sales_order_module;
 
 
 -- PRODUCT_MANAGEMENT_MODULE

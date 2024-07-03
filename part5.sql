@@ -80,7 +80,7 @@ DELIMITER ;
 
 
 
-  CREATE TABLE `dbsalesV2.4`.`rpt_quantityordered` (
+  CREATE TABLE `dbsalesv2.5g211`.`rpt_quantityordered` (
   `report_id` INT NOT NULL,
   `productLine` VARCHAR(50) NOT NULL,
   `product` VARCHAR(70) NOT NULL,
@@ -93,28 +93,24 @@ DELIMITER ;
   PRIMARY KEY (`report_id`, `productLine`, `product`, `country`, `office`, `salesrepresentative`, `month`, `year`),
   CONSTRAINT `FK88_8808`
     FOREIGN KEY (`report_id`)
-    REFERENCES `dbsalesV2.4`.`rpt_masterlist` (`report_id`)
+    REFERENCES `dbsalesv2.5g211`.`rpt_masterlist` (`report_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);
     
     
 -- Generate report in SQL
-SELECT 	*
-FROM 	rptview_quantityordered
-WHERE 	month = MONTH(NOW())
-AND 	year = YEAR(NOW());
 
 CREATE VIEW rptview_quantityordered AS
 SELECT		pl.productLine, p.productName,
 			oc.country,
             oc.officeCode,
             c.salesRepEmployeeNumber,
-            MONTH(o.orderDate)									AS month,
-            YEAR(o.orderDate)									AS year,
+			MONTH(o.orderDate) 								 	AS MONTH,
+			YEAR(o.orderDate) 								 	AS YEAR,
 			ROUND(SUM(od.quantityOrdered),2)					AS total_quantityordered
 FROM 		orderdetails od JOIN products p 					ON od.productCode = p.productCode
 							JOIN product_productlines pl		ON p.productCode = pl.productCode
-                            JOIN orders							ON od.orderNumber = o.orderNumber								
+                            JOIN orders	o						ON od.orderNumber = o.orderNumber								
                             JOIN customers c					ON o.customerNumber = c.customerNumber
                             JOIN salesRepAssignments sra 		ON ( c.salesRepEmployeeNumber = sra.employeeNumber AND
 																	 c.officeCode			  = sra.officeCode	   AND
@@ -133,7 +129,8 @@ ON SCHEDULE EVERY 1 MONTH
 STARTS '2024-07-01'
 DO
 BEGIN
-	DECLARE report_desc		VARCHAR(100);
+    DECLARE report_desc VARCHAR(100);
+    DECLARE reportID INT;
     
     SET report_desc = CONCAT("Quantity Ordered Report for ", MONTH(NOW()), "month on year", YEAR(NOW()));
 	INSERT INTO rpt_masterlist (description, reportgenerationDate) VALUES (report_desc, NOW());
@@ -200,15 +197,24 @@ DELIMITER ;
 -- PARTITION BY p.productCode: Process each product individually. --
 
 CREATE VIEW rptview_pricing_variation AS
-SELECT     pl.productLine,
-           p.productName,
-           MONTH(NOW()) AS month,
-           YEAR(NOW()) AS year,
-           ROUND(AVG((p.buyPrice - LAG(p.buyPrice) OVER (PARTITION BY p.productCode ORDER BY p.productCode, YEAR(NOW()), MONTH(NOW()))) / LAG(p.buyPrice) OVER (PARTITION BY p.productCode ORDER BY p.productCode, YEAR(NOW()), MONTH(NOW()))) * 100, 2) AS avg_pricing_variation
-FROM       products p
-JOIN       productlines pl ON p.productCode = pl.productLine
-GROUP BY   pl.productLine, p.productName, MONTH(NOW()), YEAR(NOW())
-ORDER BY   pl.productLine, p.productName, MONTH(NOW()), YEAR(NOW());
+SELECT		pl.productLine,
+			p.productName,
+			MONTH(NOW()) AS MONTH,
+			YEAR(NOW()) AS YEAR,
+			ROUND(AVG((p.buyPrice - prev_p.prev_buyPrice) / prev_p.prev_buyPrice * 100), 2) AS avg_pricing_variation
+FROM 		products p 		JOIN productlines pl ON p.productCode = pl.productLine
+							LEFT JOIN (	SELECT productCode,
+											   buyPrice AS prev_buyPrice,
+											   YEAR(NOW()) AS YEAR,
+											   MONTH(NOW()) - 1 AS MONTH
+										FROM products
+										WHERE MONTH(NOW()) - 1 = MONTH(NOW()) - 1
+									  ) prev_p ON p.productCode = prev_p.productCode 
+											   AND prev_p.YEAR = YEAR(NOW())
+											   AND prev_p.MONTH = MONTH(NOW()) - 1
+GROUP BY pl.productLine, p.productName, MONTH, YEAR
+ORDER BY pl.productLine, p.productName, MONTH, YEAR;
+
 
 -- Pricing Variation Report View End --
 
