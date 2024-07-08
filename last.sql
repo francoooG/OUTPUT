@@ -1,7 +1,8 @@
+DROP EVENT auto_reassign_sales_rep;
 DELIMITER $$
 CREATE EVENT auto_reassign_sales_rep
 ON SCHEDULE EVERY 1 DAY
-STARTS  '2024-07-01 18:00:00' -- '2024-07-01 18:00:00'
+STARTS  NOW() -- '2024-07-01 18:00:00'
 DO
 BEGIN
     DECLARE prev_sales DECIMAL(9,2);
@@ -16,6 +17,18 @@ BEGIN
 					FROM salesRepAssignments
 					WHERE endDate = CURDATE()) THEN
                     
+		UPDATE customers c
+		JOIN 	(		SELECT sra.employeeNumber AS employeeNumber, sra.quota - SUM(od.quantityOrdered * od.priceEach) AS finalQuota
+						FROM 	salesRepAssignments sra LEFT JOIN customers c 		ON sra.employeeNumber = c.salesRepEmployeeNumber
+														LEFT JOIN orders o 			ON o.customerNumber = c.customerNumber
+														LEFT JOIN orderdetails od 	ON od.orderNumber = o.orderNUmber
+						WHERE endDate = CURDATE()
+						AND		YEAR(o.orderDate) = 2005 OR YEAR(o.orderDate) = 2024
+						GROUP BY sra.employeeNumber, sra.quota
+				) AS n ON c.salesRepEmployeeNumber = n.employeeNumber
+		SET 	c.startDate = NULL, c.officeCode = NULL
+		WHERE c.salesRepEmployeeNumber = n.employeeNumber;
+                    
         
         -- Reassign the sales representative for an additional week
         UPDATE salesRepAssignments sra
@@ -25,9 +38,21 @@ BEGIN
 												LEFT JOIN orderdetails od 	ON od.orderNumber = o.orderNUmber
 				WHERE endDate = CURDATE()
 				AND		YEAR(o.orderDate) = 2005 OR YEAR(o.orderDate) = 2024
-				GROUP BY sra.employeeNumber
+				GROUP BY sra.employeeNumber, sra.quota
 			 ) AS n ON sra.employeeNumber = n.employeeNumber
         SET startDate = NOW(), endDate = NOW() + INTERVAL 1 WEEK, end_username = 'System', end_userreason = 'System Reassignment', sra.quota = n.finalQuota;
+        
+		UPDATE customers c
+		JOIN 	(		SELECT sra.employeeNumber AS employeeNumber, sra.startDate AS startDate, sra.officeCode AS officeCode
+						FROM 	salesRepAssignments sra LEFT JOIN customers c 		ON sra.employeeNumber = c.salesRepEmployeeNumber
+														LEFT JOIN orders o 			ON o.customerNumber = c.customerNumber
+														LEFT JOIN orderdetails od 	ON od.orderNumber = o.orderNUmber
+						WHERE endDate = CURDATE()
+						AND		YEAR(o.orderDate) = 2005 OR YEAR(o.orderDate) = 2024
+						GROUP BY sra.employeeNumber, sra.quota, sra.startDate, sra.officeCode
+				) AS n ON c.salesRepEmployeeNumber = n.employeeNumber
+		SET 	c.startDate = n.startDate, c.officeCode = n.officeCode
+		WHERE c.salesRepEmployeeNumber = n.employeeNumber;
 	
         UPDATE salesRepAssignments sra
         SET sra.quota = 0
@@ -35,7 +60,7 @@ BEGIN
 	END IF;
 END $$
 DELIMITER ;
-
+REFERENCES `salesrepassignments` (`employeeNumber`, `officeCode`, `start)
 
 
 
