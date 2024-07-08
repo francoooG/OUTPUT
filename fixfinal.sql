@@ -676,38 +676,4 @@ BEGIN
 END$$
 DELIMITER ;
 
-
-
-
-
-
-
-DELIMITER $$
-CREATE EVENT dbm211_TimedMessage
-ON SCHEDULE EVERY 1 DAY
-STARTS '2024-07-04 18:00:00'
-DO
-BEGIN
--- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	DECLARE i 					INT DEFAULT 0;
-	DECLARE n 					INT DEFAULT 0;
-    DECLARE startDate 			DATE;
-    DECLARE endDate 			DATE;
-    DECLARE currEmployeeNumber 	INT DEFAULT 0;
-    DECLARE salesManager        VARCHAR(255) DEFAULT 'System';
-	DECLARE facilitatedSales    DECIMAL(10,2);
-    DECLARE newQuota            DECIMAL(10,2);
-    DECLARE previousQuota            DECIMAL(10,2);
-
-    
-    UPDATE salesRepAssignments s
-    JOIN (  SELECT sd.endDate, 
-            FROM salesRepAssignments sd
-         ) AS n ON c.customerNumber = n.customerNumber
-    SET c.creditLimit = n.newCreditLimit;
-END$$
-DELIMITER ;
--- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 -- ORDERS GAB YOU FORGOT ORDERS BEFORE UPDATE COMMENTS
