@@ -1,10 +1,10 @@
 -- ORDERS TABLE
 -- BEFORE INSERT
 -- LEGEND: 
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orders_BEFORE_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orders_BEFORE_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orders_BEFORE_INSERT` BEFORE INSERT ON `orders` FOR EACH ROW BEGIN
 	-- OrderNumber Generation
     DECLARE NEW_ordernumber	INT;
@@ -31,10 +31,10 @@ DELIMITER ;
 
 
 -- BEFORE UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orders_BEFORE_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orders_BEFORE_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orders_BEFORE_UPDATE` BEFORE UPDATE ON `orders` FOR EACH ROW BEGIN
 	DECLARE concat_string TEXT;
 
@@ -103,10 +103,10 @@ END$$
 DELIMITER ;
 
 -- AFTER UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orders_AFTER_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orders_AFTER_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orders_AFTER_UPDATE` AFTER UPDATE ON `orders` FOR EACH ROW BEGIN
 	IF (old.orderNumber <> new.orderNumber) THEN 
 		SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "orderNumber cannot be modified";
@@ -127,10 +127,10 @@ DELIMITER ;
 
 
 -- BEFORE DELETE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orders_BEFORE_DELETE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orders_BEFORE_DELETE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orders_BEFORE_DELETE` BEFORE DELETE ON `orders` FOR EACH ROW BEGIN
 	-- Prevent deletion of orders by raising an error
     SIGNAL SQLSTATE '45000'
@@ -139,22 +139,22 @@ END$$
 DELIMITER ;
 
 -- ORDERDETAILS TABLE
-ALTER TABLE `dbsalesv2.5G211`.`orderdetails` 
+ALTER TABLE `dbsalesV2.5G211`.`orderdetails` 
 DROP FOREIGN KEY `FK0008`;
-ALTER TABLE `dbsalesv2.5G211`.`orderdetails` 
+ALTER TABLE `dbsalesV2.5G211`.`orderdetails` 
 ADD INDEX `FK0008_idx` (`productCode` ASC) VISIBLE,
 DROP INDEX `FK0008_idx` ;
 ;
-ALTER TABLE `dbsalesv2.5G211`.`orderdetails` 
+ALTER TABLE `dbsalesV2.5G211`.`orderdetails` 
 ADD CONSTRAINT `FK0008`
   FOREIGN KEY (`productCode`)
-  REFERENCES `dbsalesv2.5G211`.`products` (`productCode`);
+  REFERENCES `dbsalesV2.5G211`.`products` (`productCode`);
 
 -- BEFORE INSERT
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_BEFORE_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_BEFORE_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_BEFORE_INSERT` BEFORE INSERT ON `orderdetails` FOR EACH ROW BEGIN
     DECLARE NEW_lineNumber		INT;
 	DECLARE currentCategory CHAR(1);
@@ -194,10 +194,10 @@ END$$
 DELIMITER ;
 
 -- AFTER INSERT
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_AFTER_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_AFTER_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_AFTER_INSERT` AFTER INSERT ON `orderdetails` FOR EACH ROW BEGIN
     -- Update Inventory
     UPDATE current_products 
@@ -213,10 +213,10 @@ END$$
 DELIMITER ;
 
 -- BEFORE UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_BEFORE_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_BEFORE_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_BEFORE_UPDATE` BEFORE UPDATE ON `orderdetails` FOR EACH ROW BEGIN
     -- No updates on LineNumbers
     SET NEW.orderLineNumber := OLD.orderLineNumber;
@@ -256,10 +256,10 @@ END$$
 DELIMITER ;
 
 -- AFTER UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_AFTER_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_AFTER_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_AFTER_UPDATE` AFTER UPDATE ON `orderdetails` FOR EACH ROW BEGIN
    -- Update Inventory
     UPDATE current_products SET quantityInStock = checkProjectedQuantity(NEW.productCode, NEW.quantityOrdered, OLD.quantityOrdered)
@@ -279,10 +279,10 @@ DELIMITER ;
 
 
 -- BEFORE DELETE
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`orderdetails_BEFORE_DELETE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_BEFORE_DELETE`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_BEFORE_DELETE` BEFORE DELETE ON `orderdetails` FOR EACH ROW BEGIN
     IF (!(checkOrderStatus(OLD.orderNumber) = "In Process" OR checkOrderStatus(OLD.orderNumber) = "Cancelled")) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "ERROR 100x: Shipped Orders can't be deleted.";
@@ -298,10 +298,10 @@ DELIMITER ;
 
 
 -- AFTER DELETE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`orderdetails_AFTER_DELETE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`orderdetails_AFTER_DELETE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `orderdetails_AFTER_DELETE` AFTER DELETE ON `orderdetails` FOR EACH ROW BEGIN
 	-- Update inventory: add back the ordered quantities
     UPDATE current_products 
@@ -320,11 +320,11 @@ DELIMITER ;
 
 -- CURRENT_PRODUCTS
 -- BEFORE INSERT
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`current_products_BEFORE_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`current_products_BEFORE_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
-CREATE TRIGGER `dbsalesv2.5g211`.`current_products_BEFORE_INSERT` BEFORE INSERT ON `current_products` FOR EACH ROW
+USE `dbsalesV2.5G211`$$
+CREATE TRIGGER `dbsalesV2.5G211`.`current_products_BEFORE_INSERT` BEFORE INSERT ON `current_products` FOR EACH ROW
 BEGIN
     SET NEW.end_username = CURRENT_USER;
 END$$
@@ -334,10 +334,10 @@ DELIMITER ;
 
 -- CURRENT_PRODUCTS
 -- BEFORE UPDATE
-DROP TRIGGER IF EXISTS `dbsalesv2.5G211`.`current_products_BEFORE_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`current_products_BEFORE_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `current_products_BEFORE_UPDATE` BEFORE UPDATE ON `current_products` FOR EACH ROW BEGIN
 	IF (isStringChanged(OLD.product_type, NEW.product_type) = TRUE) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "ERROR 100x: Product categories cannot be modified.";
@@ -354,11 +354,11 @@ DELIMITER ;
 
 -- FUNCTIONS
 -- APPENDCOMMENTS
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `appendComments`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `appendComments` (v_OLD_comments TEXT, v_NEW_comments TEXT)
 RETURNS TEXT
 	NO SQL
@@ -373,11 +373,11 @@ END$$
 DELIMITER ;
 
 -- CHECKORDERSTATUS
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `checkOrderStatus`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `checkOrderStatus`(v_orderNumber INT) 
 RETURNS VARCHAR (15)
     READS SQL DATA
@@ -393,14 +393,14 @@ DELIMITER ;
 
 
 -- ISDATETIMECHANGED
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isDatetimeChanged`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isDatetimeChanged`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isDatetimeChanged`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isDatetimeChanged`(v_OLD_column DATETIME, v_NEW_column DATETIME) 
 RETURNS tinyint(1)
     NO SQL
@@ -416,14 +416,14 @@ END$$
 DELIMITER ;
 
 -- ISDOUBLECHANGED
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isDoubleChanged`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isDoubleChanged`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isDoubleChanged`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isDoubleChanged`(v_OLD_column DOUBLE, v_NEW_column DOUBLE) RETURNS tinyint(1)
     NO SQL
     DETERMINISTIC
@@ -439,14 +439,14 @@ DELIMITER ;
 
 
 -- ISINTCHANGED
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isIntChanged`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isIntChanged`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isIntChanged`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isIntChanged`(v_OLD_column INT, v_NEW_column INT) RETURNS tinyint(1)
     NO SQL
     DETERMINISTIC
@@ -461,14 +461,14 @@ END$$
 DELIMITER ;
 
 -- ISSTATUSUPDATEVALID
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isStatusUpdateValid`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isStatusUpdateValid`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isStatusUpdateValid`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isStatusUpdateValid`(v_OLD_status VARCHAR(15), v_NEW_status VARCHAR (15)) RETURNS tinyint(1)
     NO SQL
 BEGIN
@@ -488,14 +488,14 @@ DELIMITER ;
 
 
 -- ISSTRINGCHANGED
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isStringChanged`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isStringChanged`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isStringChanged`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isStringChanged`(v_OLD_identifier VARCHAR(15), v_NEW_identifier VARCHAR(15)) RETURNS tinyint(1)
     NO SQL
     DETERMINISTIC
@@ -509,14 +509,14 @@ END$$
 
 DELIMITER ;
 -- ISTARGETDELIVERYVALID
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `isTargetDeliveryValid`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`isTargetDeliveryValid`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`isTargetDeliveryValid`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `isTargetDeliveryValid`(v_requiredDate DATETIME, v_orderDate DATETIME) RETURNS tinyint(1)
     NO SQL
 BEGIN
@@ -529,14 +529,14 @@ END$$
 DELIMITER ;
 
 -- VALIDPRICE
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `validPrice`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`validPrice`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`validPrice`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `validPrice`(v_productCode VARCHAR(15), v_providedPrice DOUBLE) RETURNS tinyint(1)
     READS SQL DATA
     DETERMINISTIC
@@ -576,11 +576,11 @@ DELIMITER ;
 
 
 -- CHECKPROJECTEDQUANTITY
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `checkProjectedQuantity`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `checkProjectedQuantity` (v_productCode VARCHAR(15), v_NEWquantityOrdered INT, v_OLDquantityOrdered INT)
 RETURNS INTEGER
 	READS SQL DATA
@@ -620,14 +620,14 @@ DELIMITER ;
 
 
 -- GETPRICERANGE
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `getPriceRange`;
 
-USE `dbsalesv2.5G211`;
-DROP function IF EXISTS `dbsalesv2.5G211`.`getPriceRange`;
+USE `dbsalesV2.5G211`;
+DROP function IF EXISTS `dbsalesV2.5G211`.`getPriceRange`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `getPriceRange`(v_productCode VARCHAR(15), v_maxOrMin VARCHAR(15)) RETURNS double
     READS SQL DATA
 BEGIN
@@ -690,14 +690,14 @@ DELIMITER ;
 
 -- STORED PROCEDUERS
 -- ADD_PRODUCT
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP procedure IF EXISTS `add_product`;
 
-USE `dbsalesv2.5G211`;
-DROP procedure IF EXISTS `dbsalesv2.5G211`.`add_product`;
+USE `dbsalesV2.5G211`;
+DROP procedure IF EXISTS `dbsalesV2.5G211`.`add_product`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE PROCEDURE `add_product`(	IN v_productCode			VARCHAR (15),
                                 IN v_productName			VARCHAR (70),
                                 IN v_productScale			VARCHAR (10),
@@ -724,14 +724,14 @@ END$$
 DELIMITER ;
 
 -- UPDATE_PRODUCT
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP procedure IF EXISTS `update_product`;
 
-USE `dbsalesv2.5G211`;
-DROP procedure IF EXISTS `dbsalesv2.5G211`.`update_product`;
+USE `dbsalesV2.5G211`;
+DROP procedure IF EXISTS `dbsalesV2.5G211`.`update_product`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE PROCEDURE `update_product`(	IN v_productCode			VARCHAR (15),
 									IN v_productName			VARCHAR (70),
 									IN v_productScale			VARCHAR (10),
@@ -774,11 +774,11 @@ DELIMITER ;
 
 
 -- DISCONTINUEPRODUCT
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP procedure IF EXISTS `discontinueProduct`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE PROCEDURE `discontinueProduct` (v_productCode VARCHAR(15), v_reason VARCHAR (45), v_inventory_manager INT)
 BEGIN
 	DECLARE currProductType CHAR(1);
@@ -802,14 +802,14 @@ END$$
 DELIMITER ;
 
 -- RECONTINUEPRODUCT
-USE `dbsalesv2.5G211`;
+USE `dbsalesV2.5G211`;
 DROP procedure IF EXISTS `recontinueProduct`;
 
-USE `dbsalesv2.5G211`;
-DROP procedure IF EXISTS `dbsalesv2.5G211`.`recontinueProduct`;
+USE `dbsalesV2.5G211`;
+DROP procedure IF EXISTS `dbsalesV2.5G211`.`recontinueProduct`;
 
 DELIMITER $$
-USE `dbsalesv2.5G211`$$
+USE `dbsalesV2.5G211`$$
 CREATE PROCEDURE `recontinueProduct`(v_productCode VARCHAR(15), v_quantityInStock SMALLINT)
 BEGIN
 	DECLARE currProductType CHAR(1);

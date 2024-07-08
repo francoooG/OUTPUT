@@ -1,9 +1,7 @@
-DROP EVENT dbm211_creditLimitManagement;
-
 DELIMITER $$
 CREATE EVENT dbm211_creditLimitManagement
 ON SCHEDULE EVERY 1 MONTH
-STARTS STARTS '2024-07-01 00:00:00'
+STARTS '2024-07-01 00:00:00'
 DO
 BEGIN
 	DECLARE i 					INT DEFAULT 0;
@@ -24,6 +22,7 @@ BEGIN
         FROM 		customers 
         ORDER BY 	customerNumber ASC LIMIT 1 OFFSET i; 
 
+        -- Gets how many orders the customer has 
 		SELECT 		COUNT(o.orderNumber) INTO totalOrders
 	    FROM 		customers c JOIN orders o ON o.customerNumber = c.customerNumber
 		WHERE 		o.customerNumber = currCustomerNumber
@@ -82,5 +81,50 @@ BEGIN
         -- Iteration increment
         SET 		i = i + 1;
 	END WHILE;
+END$$
+DELIMITER ;
+
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE EVENT dbm211_creditLimitManagement
+ON SCHEDULE EVERY 1 MONTH
+STARTS '2024-07-01 00:00:00'
+DO
+BEGIN
+    DECLARE previousMonth INT;
+    DECLARE previousYear INT;
+
+    SET previousMonth = MONTH(NOW()) - 1;
+    SET previousYear = YEAR(NOW());
+    IF (previousMonth = 0) THEN
+        SET previousMonth = 12;
+        SET previousYear = YEAR(NOW()) - 1;
+    END IF;
+
+
+    UPDATE customers c
+    JOIN (  SELECT o.customerNumber, ROUND(SUM(od.quantityOrdered * od.priceEach) * 2,2) AS newCreditLimit
+            FROM orders o 	JOIN orderdetails od ON o.orderNumber = od.orderNumber
+            GROUP BY o.customerNumber 
+         ) AS n ON c.customerNumber = n.customerNumber
+    SET c.creditLimit = n.newCreditLimit;
+
+    UPDATE customers c
+    JOIN (  SELECT 	o.customerNumber, COUNT(DISTINCT(od.productCode)), MONTH(o.orderDate) AS MONTH, YEAR(o.orderDate) AS YEAR,
+					ROUND(MAX(od.quantityOrdered * od.priceEach),2) AS highestOrderAmount
+            FROM 	customers c JOIN orders o ON c.customerNumber
+                                JOIN orderdetails od ON o.orderNumber = od.orderNumber
+            WHERE 	MONTH(o.orderDate) = previousMonth
+            AND 	YEAR(o.orderDate) = previousYear
+            GROUP BY o.customerNumber
+            HAVING COUNT(DISTINCT(od.productCode)) > 15
+        ) AS n ON c.customerNumber = n.customerNumber
+    SET c.creditLimit = c.creditLimit + n.highestOrderAmount;
 END$$
 DELIMITER ;

@@ -1,41 +1,41 @@
-ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+ALTER TABLE `dbsalesV2.5G211`.`salesRepAssignments` 
 DROP FOREIGN KEY `FK-88_001`;
-ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+ALTER TABLE `dbsalesV2.5G211`.`salesRepAssignments` 
 ADD INDEX `FK-88_001_idx` (`employeeNumber` ASC) VISIBLE,
 DROP PRIMARY KEY;
 ;
-ALTER TABLE `dbsalesv2.5g211`.`salesrepassignments` 
+ALTER TABLE `dbsalesV2.5G211`.`salesRepAssignments` 
 ADD CONSTRAINT `FK-88_001`
   FOREIGN KEY (`employeeNumber`)
-  REFERENCES `dbsalesv2.5g211`.`employees` (`employeeNumber`);
+  REFERENCES `dbsalesV2.5G211`.`employees` (`employeeNumber`);
 
 
 
 -- Change sales_managers employeeNumber foreign key from Non_SalesRepresentatives to employees
-ALTER TABLE `dbsalesv2.5g211`.`sales_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`sales_managers` 
 DROP FOREIGN KEY `FK-89_001`;
-ALTER TABLE `dbsalesv2.5g211`.`sales_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`sales_managers` 
 ADD INDEX `FK-89_001_idx` (`employeeNumber` ASC) VISIBLE,
 DROP PRIMARY KEY;
 ;
-ALTER TABLE `dbsalesv2.5g211`.`sales_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`sales_managers` 
 ADD CONSTRAINT `FK-89_001`
   FOREIGN KEY (`employeeNumber`)
-  REFERENCES `dbsalesv2.5g211`.`employees` (`employeeNumber`);
+  REFERENCES `dbsalesV2.5G211`.`employees` (`employeeNumber`);
 
 
 
 -- Change inventory_managers employeeNumber foreign key from Non_SalesRepresentatives to employees
-ALTER TABLE `dbsalesv2.5g211`.`inventory_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`inventory_managers` 
 DROP FOREIGN KEY `FK-92_001`;
-ALTER TABLE `dbsalesv2.5g211`.`inventory_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`inventory_managers` 
 ADD INDEX `FK-92_001_idx` (`employeeNumber` ASC) VISIBLE,
 DROP PRIMARY KEY;
 ;
-ALTER TABLE `dbsalesv2.5g211`.`inventory_managers` 
+ALTER TABLE `dbsalesV2.5G211`.`inventory_managers` 
 ADD CONSTRAINT `FK-92_001`
   FOREIGN KEY (`employeeNumber`)
-  REFERENCES `dbsalesv2.5g211`.`employees` (`employeeNumber`);
+  REFERENCES `dbsalesV2.5G211`.`employees` (`employeeNumber`);
 
 
 
@@ -58,16 +58,16 @@ At any time and because of employee movements, promotions and re-assignments, em
 
 -- 2
 -- Job Titles are controlled values from a set of job titles available in the organization. 
-CREATE TABLE `dbsalesv2.5g211`.`job_titles_list` (
+CREATE TABLE `dbsalesV2.5G211`.`job_titles_list` (
   `jobTitle` VARCHAR(50) NOT NULL,
   `status` ENUM('U', 'D') NULL,
   PRIMARY KEY (`jobTitle`));
 
 
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`employees_BEFORE_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`employees_BEFORE_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `employees_BEFORE_INSERT` BEFORE INSERT ON `employees` FOR EACH ROW BEGIN
 	DECLARE newEmployeeNumber INT;
     DECLARE jobTitleStatus VARCHAR(1);
@@ -99,11 +99,11 @@ CREATE TRIGGER `employees_BEFORE_INSERT` BEFORE INSERT ON `employees` FOR EACH R
     SET NEW.end_username = CURRENT_USER;
 END$$
 DELIMITER ;
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`employees_AFTER_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`employees_AFTER_INSERT`;
 
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `employees_AFTER_INSERT` AFTER INSERT ON `employees` FOR EACH ROW BEGIN
 	IF (NEW.jobTitle != 'Sales Rep') THEN
 		UPDATE job_titles_list SET status = 'D' WHERE jobTitle = NEW.jobTitle;
@@ -130,10 +130,10 @@ DELIMITER ;
 
 
 
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`employees_BEFORE_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`employees_BEFORE_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `employees_BEFORE_UPDATE` BEFORE UPDATE ON `employees` FOR EACH ROW BEGIN
 	DECLARE jobTitleStatus VARCHAR(1);
     DECLARE current_end_date DATE;
@@ -192,10 +192,10 @@ DELIMITER ;
 
 
 
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`employees_AFTER_UPDATE`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`employees_AFTER_UPDATE`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE TRIGGER `employees_AFTER_UPDATE` AFTER UPDATE ON `employees` FOR EACH ROW BEGIN
 	DECLARE nonSalesRepCode INT;
     
@@ -258,11 +258,11 @@ DELIMITER ;
 
 
 -- 4C.f START ----------------------------------------------------------------------------------------------------------------------------------------------------------
-DROP TRIGGER IF EXISTS `dbsalesv2.5g211`.`salesRepAssignments_BEFORE_INSERT`;
+DROP TRIGGER IF EXISTS `dbsalesV2.5G211`.`salesRepAssignments_BEFORE_INSERT`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
-CREATE TRIGGER `salesRepAssignments_BEFORE_INSERT` BEFORE INSERT ON `salesrepassignments` FOR EACH ROW BEGIN
+USE `dbsalesV2.5G211`$$
+CREATE TRIGGER `salesRepAssignments_BEFORE_INSERT` BEFORE INSERT ON `salesRepAssignments` FOR EACH ROW BEGIN
 	DECLARE last_end_date DATE;
     SET new.startDate := now();
 
@@ -320,11 +320,11 @@ DELIMITER ;
 
 
 
-USE `dbsalesv2.5g211`;
+USE `dbsalesV2.5G211`;
 DROP function IF EXISTS `is_JobAndType_consistent`;
 
 DELIMITER $$
-USE `dbsalesv2.5g211`$$
+USE `dbsalesV2.5G211`$$
 CREATE FUNCTION `is_JobAndType_consistent` (v_employee_type VARCHAR(1), v_jobTitle VARCHAR(50))
 	RETURNS BOOLEAN
     NO SQL
@@ -371,15 +371,15 @@ BEGIN
 	WHILE i < n DO 
 		-- Gets each customerNumber in the table per iteration
 		SELECT 		employeeNumber, endDate INTO currEmployeeNumber, endDate 
-        FROM 		salesRepAssignments 
-        ORDER BY 	employeeNumber ASC LIMIT 1 OFFSET i; 
+    FROM 		salesRepAssignments 
+    ORDER BY 	employeeNumber ASC LIMIT 1 OFFSET i; 
         
         -- Updates endDate
-        IF (endDate = NOW()) THEN
-			UPDATE 		salesRepAssignments 
-			SET 		endDate = DATE_ADD(NOW(), INTERVAL 1 WEEK)
-			WHERE 		employeeNumber = currEmployeeNumber;
-        END IF;
+      IF (endDate = NOW()) THEN
+        UPDATE 		salesRepAssignments 
+        SET 		endDate = DATE_ADD(NOW(), INTERVAL 1 WEEK)
+        WHERE 		employeeNumber = currEmployeeNumber;
+      END IF;
         
 		-- Get previous quota 
         SELECT COALESCE(creditLimit, 0) INTO previousQuota
@@ -414,7 +414,3 @@ BEGIN
 	END WHILE;
 END$$
 DELIMITER ;
-
-
-
-
